@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出库单（提货委托书）自动生成系统</title>
+<style>
+/* ==========================================================
+   ���ⵥ�����ί���飩�Զ�����ϵͳ - Styles
+   ========================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #1a6fb5;
+  --primary-hover: #155a94;
+  --primary-light: #e8f0fe;
+  --success: #2e7d32;
+  --danger: #c62828;
+  --danger-bg: #fef2f2;
+  --warning: #e65100;
+  --gray-50: #f8f9fa;
+  --gray-100: #f0f2f5;
+  --gray-200: #e2e5ea;
+  --gray-300: #c4c9d0;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --radius: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  background: var(--gray-100);
+  color: var(--gray-800);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* Header */
+.app-header {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary);
+}
+
+.app-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gray-800);
+  letter-spacing: 0.5px;
+}
+
+/* Cards */
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-700);
+  padding: 14px 20px;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.card-title, .config-hint, .empty-hint {
+  user-select: none;
+}
+
+/* Upload Section */
+.upload-grid {
+  padding: 16px 20px;
+}
+
+.upload-item {
+  margin-bottom: 14px;
+}
+
+.upload-item:last-child {
+  margin-bottom: 0;
+}
+
+.upload-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+
+.required {
+  color: var(--danger);
+}
+
+.upload-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.file-input {
+  position: fixed;
+  top: -100px;
+  left: -100px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.file-status {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-left: 4px;
+}
+
+.file-status.uploaded {
+  color: var(--success);
+  font-weight: 500;
+}
+
+.file-status.empty-file {
+  color: var(--danger);
+}
+
+.template-history {
+  padding: 5px 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  font-size: 13px;
+  background: #fff;
+  color: var(--gray-700);
+  max-width: 200px;
+}
+
+.template-history:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-400);
+}
+
+.btn:active {
+  background: var(--gray-100);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-primary:active {
+  background: #0f4d7a;
+}
+
+.btn:disabled, .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-process {
+  padding: 10px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+.btn-process:hover {
+  background: #236b27;
+  border-color: #236b27;
+}
+
+.btn-process:disabled {
+  background: var(--gray-400);
+  border-color: var(--gray-400);
+}
+
+.btn-download-all:disabled {
+  opacity: 0.4;
+}
+
+.btn-download-all:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.btn-download-all:not(:disabled):hover {
+  background: var(--primary-hover);
+}
+
+/* Config Section */
+.config-body {
+  padding: 16px 20px;
+}
+
+.config-hint {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-bottom: 8px;
+}
+
+#parties-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.7;
+  transition: border-color 0.15s;
+}
+
+#parties-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.config-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.save-status {
+  font-size: 13px;
+  color: var(--gray-400);
+}
+
+.save-status.saved {
+  color: var(--success);
+}
+
+/* Process Section */
+.process-body {
+  padding: 16px 20px;
+}
+
+.progress-area {
+  margin-top: 16px;
+}
+
+.progress-bar-wrapper {
+  height: 24px;
+  background: var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--primary), #4a9eda);
+  border-radius: 12px;
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.progress-bar span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+
+.progress-text {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Result Section */
+.result-body {
+  padding: 0;
+}
+
+.result-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  background: var(--gray-50);
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.tab-btn.active {
+  color: var(--gray-800);
+  background: #fff;
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+.tab-btn span {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: var(--gray-200);
+  color: var(--gray-600);
+  margin-left: 4px;
+}
+
+.tab-btn.active span {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.result-panel {
+  display: none;
+}
+
+.result-panel.active {
+  display: block;
+}
+
+.result-toolbar {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.result-list {
+  padding: 12px 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: var(--gray-400);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Result Items */
+.result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 13px;
+  gap: 12px;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-item-success {
+  background: #f1f8e9;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.result-item-fail {
+  background: var(--danger-bg);
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.result-item .item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-item .item-contract {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.result-item .item-detail {
+  color: var(--gray-500);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.result-item .item-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 2px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.result-item .item-actions {
+  flex-shrink: 0;
+}
+
+.result-item .btn-download-single {
+  font-size: 12px;
+  padding: 3px 10px;
+}
+
+/* Checkbox overlay for failed semi-finished */
+.semi-finished-badge {
+  font-size: 11px;
+  color: var(--warning);
+  background: #fff3e0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-message {
+  font-size: 14px;
+  color: var(--gray-700);
+  margin-bottom: 18px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Scrollbar styling */
+.result-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-list::-webkit-scrollbar-track {
+  background: var(--gray-50);
+}
+
+.result-list::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  #app {
+    padding: 12px 8px;
+  }
+
+  .app-header h1 {
+    font-size: 18px;
+  }
+
+  .upload-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .template-history {
+    max-width: 100%;
+  }
+
+  .config-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .result-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .result-item .item-actions {
+    text-align: right;
+  }
+}
+
+/* Update notification */
+.update-notification {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: #fff;
+  border: 1px solid var(--primary);
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  padding: 10px 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 999;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+}
+.update-notification a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.update-notification a:hover {
+  text-decoration: underline;
+}
+.update-notification .update-close {
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 18px;
+  line-height: 1;
+  margin-left: auto;
+}
+.update-notification .update-close:hover {
+  color: var(--gray-600);
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 版本更新通知 -->
+  <div id="update-notification" class="update-notification" style="display:none">
+    <span id="update-msg"></span>
+    <a id="update-link" target="_blank">下载更新</a>
+    <span class="update-close" onclick="this.parentElement.style.display='none'">&times;</span>
+  </div>
+  <header class="app-header">
+    <h1>出库单（提货委托书）自动生成系统</h1>
+  </header>
+
+  <main class="app-main">
+    <!-- 文件上传区域 -->
+    <section class="card upload-section">
+      <h2 class="card-title">📂 文件上传</h2>
+      <div class="upload-grid">
+        <div class="upload-item" id="upload-order">
+          <label class="upload-label">货转销售订单.xlsx <span class="required">*</span></label>
+          <div class="upload-controls">
+            <input type="file" accept=".xlsx" class="file-input" id="file-order" data-key="order">
+            <label class="btn btn-upload" for="file-order">选择文件</label>
+            <span class="file-status" id="status-order">未上传</span>
+          </div>
+        </div>
+        <div class="upload-item" id="upload-yarn">
+          <label class="upload-label">纱线销售订单列表.xlsx <span class="required">*</span></label>
+          <div class="upload-controls">
+            <input type="file" accept=".xlsx" class="file-input" id="file-yarn" data-key="yarn">
+            <label class="btn btn-upload" for="file-yarn">选择文件</label>
+            <span class="file-status" id="status-yarn">未上传</span>
+          </div>
+        </div>
+        <div class="upload-item" id="upload-template">
+          <label class="upload-label">输出模板.xlsx <span class="required">*</span></label>
+          <div class="upload-controls">
+            <input type="file" accept=".xlsx" class="file-input" id="file-template" data-key="template">
+            <label class="btn btn-upload" for="file-template">选择文件</label>
+            <span class="file-status" id="status-template">未上传</span>
+            <select class="template-history" id="template-history">
+              <option value="">历史模板（可选）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 采销方配置 -->
+    <section class="card config-section">
+      <h2 class="card-title">🏭 采销方配置</h2>
+      <div class="config-body">
+        <p class="config-hint">每行输入一个企业名称，支持逗号、分号、Tab、换行符分隔，点击确认后生效</p>
+        <textarea id="parties-input" rows="8" placeholder="输入采销方企业名称，每行一个…"></textarea>
+        <div class="config-actions">
+          <button class="btn btn-primary" id="btn-save-parties">✅ 确认/保存</button>
+          <span class="save-status" id="parties-status">当前名单未保存</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 处理区域 -->
+    <section class="card process-section">
+      <h2 class="card-title">⚙️ 处理操作</h2>
+      <div class="process-body">
+        <button class="btn btn-process" id="btn-process">🚀 开始处理</button>
+        <div class="progress-area" id="progress-area" style="display:none">
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar" id="progress-bar"><span id="progress-pct">0%</span></div>
+          </div>
+          <p class="progress-text" id="progress-text">准备中…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 结果展示 -->
+    <section class="card result-section">
+      <h2 class="card-title">📋 处理结果</h2>
+      <div class="result-body">
+        <div class="result-tabs">
+          <button class="tab-btn active" data-tab="success">✅ 成功 <span id="success-count">0</span></button>
+          <button class="tab-btn" data-tab="failed">❌ 失败 <span id="failed-count">0</span></button>
+        </div>
+        <div class="result-panel active" id="panel-success">
+          <div class="result-toolbar">
+            <button class="btn btn-download-all" id="btn-download-all" disabled>📦 打包下载所有成功文件</button>
+          </div>
+          <div class="result-list" id="success-list">
+            <p class="empty-hint">暂无处理结果</p>
+          </div>
+        </div>
+        <div class="result-panel" id="panel-failed">
+          <div class="result-list" id="failed-list">
+            <p class="empty-hint">暂无失败记录</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <p class="modal-message" id="modal-message"></p>
+    <button class="btn btn-primary" id="modal-close">确定</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-confirm-overlay" style="display:none">
+  <div class="modal-box">
+    <p class="modal-message" id="modal-confirm-message"></p>
+    <div class="modal-actions">
+      <button class="btn" id="modal-confirm-cancel">取消</button>
+      <button class="btn btn-primary" id="modal-confirm-ok">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script>
+// ============================================================
+// 锟斤拷锟解单锟斤拷锟斤拷锟轿拷锟斤拷椋╋拷远锟斤拷锟斤拷锟较低?- Main Application
+// ============================================================
+// ======== 1. 状态锟斤拷??========
+const STATE = {
+  files: {
+    order: null,
+    yarn: null,
+    template: null,
+  },
+  parties: [],
+  partiesSaved: false,
+  isProcessing: false,
+  results: {
+    success: [],
+    failed: [],
+    semiFinished: [],
+  },
+  templateHistory: [],
+  processingOrder: [],
+};
+// ======== 2. DOM 锟斤拷锟斤拷 ========
+const $ = (id) => document.getElementById(id);
+const DOM = {
+  fileOrder: $('file-order'),
+  fileYarn: $('file-yarn'),
+  fileTemplate: $('file-template'),
+  statusOrder: $('status-order'),
+  statusYarn: $('status-yarn'),
+  statusTemplate: $('status-template'),
+  partiesInput: $('parties-input'),
+  partiesStatus: $('parties-status'),
+  btnSaveParties: $('btn-save-parties'),
+  btnProcess: $('btn-process'),
+  progressArea: $('progress-area'),
+  progressBar: $('progress-bar'),
+  progressPct: $('progress-pct'),
+  progressText: $('progress-text'),
+  successList: $('success-list'),
+  failedList: $('failed-list'),
+  successCount: $('success-count'),
+  failedCount: $('failed-count'),
+  panelSuccess: $('panel-success'),
+  panelFailed: $('panel-failed'),
+  btnDownloadAll: $('btn-download-all'),
+  templateHistory: $('template-history'),
+  modalOverlay: $('modal-overlay'),
+  modalMessage: $('modal-message'),
+  modalClose: $('modal-close'),
+  modalConfirmOverlay: $('modal-confirm-overlay'),
+  modalConfirmMessage: $('modal-confirm-message'),
+  modalConfirmOk: $('modal-confirm-ok'),
+  modalConfirmCancel: $('modal-confirm-cancel'),
+};
+// ======== 3. 锟斤拷锟竭猴拷锟斤拷 ========
+function showModal(msg) {
+  DOM.modalMessage.textContent = msg;
+  DOM.modalOverlay.style.display = 'flex';
+}
+function hideModal() {
+  DOM.modalOverlay.style.display = 'none';
+}
+function showConfirmModal(msg) {
+  return new Promise((resolve) => {
+    DOM.modalConfirmMessage.textContent = msg;
+    DOM.modalConfirmOverlay.style.display = 'flex';
+    DOM.modalConfirmOk.onclick = () => {
+      DOM.modalConfirmOverlay.style.display = 'none';
+      resolve(true);
+    };
+    DOM.modalConfirmCancel.onclick = () => {
+      DOM.modalConfirmOverlay.style.display = 'none';
+      resolve(false);
+    };
+  });
+}
+function guardProcessing(action) {
+  return function (...args) {
+    if (STATE.isProcessing) {
+      showModal('锟斤拷前锟斤拷锟节达拷锟斤拷锟叫ｏ拷锟睫凤拷锟睫革拷锟斤拷锟矫ｏ拷锟斤拷却锟斤拷锟斤拷锟斤拷锟缴猴拷锟劫诧拷锟斤拷');
+      return;
+    }
+    return action.apply(this, args);
+  };
+}
+function trim(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+}
+function safeCellText(cell) {
+  try {
+    var t = cell.text;
+    if (t !== null && t !== undefined) return t;
+  } catch (e) {}
+  try {
+    var v = cell.value;
+    if (v !== null && v !== undefined) return v;
+  } catch (e) {}
+  return '';
+}
+function cleanNumeric(val) {
+  if (val === null || val === undefined) return NaN;
+  let s = String(val).replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+  s = s.replace(/,/g, '');
+  return parseFloat(s);
+}
+function splitSalesOrderNumbers(text) {
+  if (!text) return [];
+  const cleaned = String(text).replace(/[锟斤拷锟斤拷;]/g, ',');
+  return cleaned.split(',').map(s => trim(s)).filter(s => s !== '');
+}
+function splitParties(text) {
+  if (!text) return [];
+  const cleaned = String(text).replace(/[,锟斤拷锟斤拷;\t]/g, '\n');
+  return cleaned.split('\n').map(s => trim(s)).filter(s => s !== '');
+}
+function getTodayParts() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return { YYYYMMDD: `${y}${m}${day}`, MMDD: `${m}${day}` };
+}
+function fuzzyEquals(a, b) {
+  return trim(String(a)).toLowerCase() === trim(String(b)).toLowerCase();
+}
+// ======== 版本自动检查 ========
+const APP_VERSION = '1.0.0';
+const UPDATE_CHECK_URL = ''; // 填入 version.json 的 URL，例如 https://example.com/version.json
+const UPDATE_DOWNLOAD_URL = ''; // 填入下载链接，例如 https://example.com/出库单生成器.html
+async function checkForUpdate() {
+  if (!UPDATE_CHECK_URL) return;
+  try {
+    const resp = await fetch(UPDATE_CHECK_URL + '?t=' + Date.now());
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.version && data.version !== APP_VERSION) {
+      var el = document.getElementById('update-notification');
+      var msg = document.getElementById('update-msg');
+      var link = document.getElementById('update-link');
+      if (el && msg) {
+        msg.textContent = '\u2600 \u53D1\u73B0\u65B0\u7248\u672C v' + data.version + (data.note ? ' (' + data.note + ')' : '');
+        if (link) link.href = data.url || UPDATE_DOWNLOAD_URL;
+        el.style.display = '';
+      }
+    }
+  } catch (e) {}
+}
+
+function cleanCompanySuffixes(name) {
+  let result = name.replace(/[（(][^）)]*[）)]/g, '');
+  const suffixes = ['有限公司', '有限责任公司', '有限责任', '集团', '供应链', '纺织', '贸易', '有限'];
+  let changed;
+  do {
+    changed = false;
+    for (const suffix of suffixes) {
+      if (result.endsWith(suffix)) {
+        result = result.slice(0, -suffix.length);
+        changed = true;
+        break;
+      }
+    }
+  } while (changed);
+  return result;
+}
+
+function generateShortName(companyName) {
+  if (!companyName) return '';
+  if (companyName.includes('厦门建发生活资材')) return '厦门建发';
+  const regionPrefixes = ['新疆', '厦门', '武汉', '上海', '广州', '山东', '江苏', '北京'];
+  const hasRegionPrefix = regionPrefixes.some(p => companyName.startsWith(p));
+  if (!hasRegionPrefix && companyName.startsWith('建发生活资材')) return '建发生活';
+  let cleaned = cleanCompanySuffixes(companyName);
+  const prefix = regionPrefixes.find(p => cleaned.startsWith(p));
+  if (prefix) {
+    const remaining = cleaned.slice(prefix.length);
+    if (prefix === '新疆' && remaining.length <= 2) {
+      return prefix + remaining;
+    }
+    return remaining.slice(0, 4);
+  }
+  return cleaned.slice(0, 4);
+}
+
+function getFirst4Chars(name) {
+  if (!name) return '';
+  return name.slice(0, 4);
+}
+// ======== 4. 锟侥硷拷锟较达拷锟斤拷校锟斤拷 ========
+function getFirstWorksheet(wb) {
+  let ws = wb.getWorksheet(1);
+  if (!ws && wb.worksheets && wb.worksheets.length > 0) {
+    ws = wb.worksheets[0];
+  }
+  if (!ws && wb.worksheets && typeof wb.worksheets === 'object') {
+    for (const sid in wb.worksheets) {
+      if (wb.worksheets[sid] && wb.worksheets[sid].name) {
+        ws = wb.worksheets[sid];
+        break;
+      }
+    }
+  }
+  return ws;
+}
+function setupFileUploads() {
+  ['order', 'yarn', 'template'].forEach(function(key) {
+    var c2 = key.charAt(0).toUpperCase() + key.slice(1);
+    var inp = DOM['file' + c2];
+    if (inp) inp.addEventListener('change', guardProcessing(handleFileSelect(key)));
+  });
+}
+function handleFileSelect(key) {
+  return async function (e) {
+    const cap__ = key.charAt(0).toUpperCase() + key.slice(1);
+    var statusEl__ = DOM['status' + cap__];
+    if (statusEl__) statusEl__.textContent = '\u23F3 \u8BFB\u53D6\u4E2D...';
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      showModal('\u6587\u4EF6\u300C' + file.name + '\u300D\u4E0D\u662F.xlsx\u683C\u5F0F\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9');
+      e.target.value = '';
+      return;
+    }
+    if (file.size === 0) {
+      showModal('\u6587\u4EF6\u300C' + file.name + '\u300D\u4E3A\u7A7A\u6587\u4EF6\uFF0C\u8BF7\u68C0\u67E5\u540E\u91CD\u65B0\u4E0A\u4F20');
+      e.target.value = '';
+      return;
+    }
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buffer);
+      let ws = getFirstWorksheet(wb);
+      if (!ws && wb.worksheets && wb.worksheets.length > 0) {
+        ws = wb.worksheets[0];
+      }
+      if (!ws && wb.worksheets && typeof wb.worksheets === 'object') {
+        for (const sid in wb.worksheets) {
+          if (wb.worksheets[sid] && wb.worksheets[sid].name) {
+            ws = wb.worksheets[sid];
+            break;
+          }
+        }
+      }
+      if (!ws || (key !== 'template' && ws.rowCount === 0)) {
+        showModal('\u6587\u4EF6\u300C' + file.name + '\u300D\u65E0\u6709\u6548\u6570\u636E\uFF0C\u8BF7\u68C0\u67E5\u540E\u91CD\u65B0\u4E0A\u4F20');
+        e.target.value = '';
+        return;
+      }
+      STATE.files[key] = { name: file.name, buffer };
+      const cap = key.charAt(0).toUpperCase() + key.slice(1);
+      const statusEl = DOM['status' + cap];
+      statusEl.textContent = '\u2705 ' + file.name;
+      statusEl.className = 'file-status uploaded';
+      if (key === 'template') {
+        await saveTemplateHistory(file.name, buffer);
+      }
+    } catch (err) {
+      showModal('\u6587\u4EF6\u300C' + file.name + '\u300D\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u6587\u4EF6\u683C\u5F0F\u3002\u9519\u8BEF\uFF1A' + err.message);
+      e.target.value = '';
+    }
+  };
+}
+// ======== 5. 锟斤拷锟斤拷锟斤拷锟斤拷??========
+const DEFAULT_PARTIES = [
+  '\u6D59\u6C5F\u4ED5\u6E90\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u6570\u667A\u4E16\u754C\uFF08\u5B81\u6CE2\uFF09\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u6D59\u6C5F\u552F\u987A\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u6D59\u6C5F\u7FFC\u9601\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u6D59\u6C5F\u6602\u9C81\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u6D59\u6C5F\u5347\u54C1\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u5E7F\u4E1C\u6570\u667A\u4E16\u754C\u4F9B\u5E94\u94FE\u6709\u9650\u516C\u53F8',
+  '\u65B0\u7586\u6570\u667A\u4E16\u754C\u8D38\u6613\u6709\u9650\u516C\u53F8',
+];
+function setupPartiesConfig() {
+  DOM.partiesInput.value = DEFAULT_PARTIES.join('\n');
+  DOM.btnSaveParties.addEventListener('click', guardProcessing(function () {
+    const raw = DOM.partiesInput.value;
+    const list = splitParties(raw);
+    if (list.length === 0) {
+      showModal('\u91C7\u9500\u65B9\u540D\u5355\u4E3A\u7A7A\uFF0C\u8BF7\u81F3\u5C11\u914D\u7F6E\u4E00\u4E2A\u6709\u6548\u4F01\u4E1A\u540D\u79F0');
+      return;
+    }
+    STATE.parties = list;
+    STATE.partiesSaved = true;
+    DOM.partiesStatus.textContent = '\u2705 \u5DF2\u4FDD\u5B58 ' + list.length + ' \u4E2A\u4F01\u4E1A\uFF08' + list.slice(0, 3).join('\u3001') + (list.length > 3 ? '\u2026' : '') + '\uFF09';
+    DOM.partiesStatus.className = 'save-status saved';
+  }));
+}
+// ======== 6. 模锟斤拷锟斤拷史锟斤拷录锟斤拷IndexedDB??========
+const DB_NAME = 'TemplateHistoryDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'templates';
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+async function loadTemplateHistory() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.index('timestamp').openCursor(null, 'prev');
+      const items = [];
+      req.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          items.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(items);
+        }
+      };
+      req.onerror = (e) => reject(e.target.error);
+    });
+  } catch (err) {
+    return [];
+  }
+}
+async function saveTemplateHistory(name, buffer) {
+  try {
+    const db = await openDB();
+    const item = {
+      name,
+      blob: new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      timestamp: Date.now(),
+    };
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.add(item);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => {
+        if (e.target.error && e.target.error.name === 'QuotaExceededError') {
+          showModal('\u6A21\u677F\u5386\u53F2\u8BB0\u5F55\u5B58\u50A8\u7A7A\u95F4\u4E0D\u8DB3\uFF0C\u8BF7\u624B\u52A8\u6E05\u7406\u5386\u53F2\u8BB0\u5F55\u540E\u518D\u8BD5');
+        }
+        reject(e.target.error);
+      };
+    });
+  } catch (err) {}
+}
+async function deleteTemplateHistory(id) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  } catch (err) {}
+}
+async function refreshTemplateHistoryDropdown() {
+  const items = await loadTemplateHistory();
+  STATE.templateHistory = items;
+  const sel = DOM.templateHistory;
+  sel.innerHTML = '<option value="">\u5386\u53F2\u6A21\u677F\uFF08\u53EF\u9009\uFF09</option>';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = item.name + ' (' + new Date(item.timestamp).toLocaleString('zh-CN') + ')';
+    sel.appendChild(opt);
+  });
+  if (items.length > 0) {
+    const opt = document.createElement('option');
+    opt.value = '__clear__';
+    opt.textContent = '\uD83D\uDDD1\uFE0F \u6E05\u7406\u6240\u6709\u5386\u53F2\u8BB0\u5F55\u2026';
+    sel.appendChild(opt);
+  }
+}
+function setupTemplateHistory() {
+  refreshTemplateHistoryDropdown();
+  DOM.templateHistory.addEventListener('change', guardProcessing(async function () {
+    const val = this.value;
+    if (!val) return;
+    if (val === '__clear__') {
+      const confirmed = await showConfirmModal('\u786E\u5B9A\u8981\u6E05\u7406\u6240\u6709\u6A21\u677F\u5386\u53F2\u8BB0\u5F55\u5417\uFF1F\u6B64\u64CD\u4F5C\u4E0D\u53EF\u6062\u590D\u3002');
+      if (confirmed) {
+        const items = STATE.templateHistory;
+        for (const item of items) {
+          await deleteTemplateHistory(item.id);
+        }
+        STATE.templateHistory = [];
+        STATE.files.template = null;
+        DOM.statusTemplate.textContent = '\u672A\u4E0A\u4F20';
+        DOM.statusTemplate.className = 'file-status';
+        refreshTemplateHistoryDropdown();
+      } else {
+        this.value = '';
+      }
+      return;
+    }
+    const item = STATE.templateHistory.find(i => i.id == val);
+    if (item && item.blob) {
+      try {
+        const buffer = await item.blob.arrayBuffer();
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.load(buffer);
+        const ws = getFirstWorksheet(wb);
+        if (!ws || (ws.rowCount === 0 && ws.columnCount === 0)) {
+          showModal('\u5386\u53F2\u6A21\u677F\u300C' + item.name + '\u300D\u65E0\u6709\u6548\u6570\u636E\uFF0C\u8BF7\u91CD\u65B0\u4E0A\u4F20');
+          return;
+        }
+        STATE.files.template = { name: item.name, buffer };
+        DOM.statusTemplate.textContent = '\u2705 ' + item.name;
+        DOM.statusTemplate.className = 'file-status uploaded';
+      } catch (err) {
+        showModal('\u5386\u53F2\u6A21\u677F\u8BFB\u53D6\u5931\u8D25: ' + err.message);
+      }
+    }
+  }));
+}
+// ======== 7. 模锟斤拷锟斤拷锟斤拷锟斤拷锟?========
+function analyzeTemplate(ws) {
+  const maxCol = ws.columnCount || 20;
+  let headerRow = -1;
+  let dataStartRow = -1;
+  let dataEndRow = -1;
+  let summaryRow = -1;
+  let numberCell = null;
+  let headerCell = null;
+  let footerCell = null;
+  const colMap = {};
+  for (let r = 1; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    let hasContent = false;
+    for (let c = 1; c <= maxCol; c++) {
+      const cell = row.getCell(c);
+      const val = trim(String(safeCellText(cell)));
+      if (!val) continue;
+      hasContent = true;
+      if (val === '\u5E8F\u53F7' && headerRow === -1) {
+        headerRow = r;
+        for (let cc = 1; cc <= maxCol; cc++) {
+          const hv = trim(String(row.getCell(cc).text || ''));
+          if (hv) colMap[hv] = cc;
+        }
+      }
+      if (val.includes('\u7F16\u53F7') && !val.includes('\u65E5\u671F') && !numberCell) {
+        if (!numberCell && c < maxCol && r < 5) numberCell = { row: r, col: c + 1 };
+      }
+      if ((val.includes('\u62AC\u5934') || val.includes('\u59D4\u6258\u65B9') || val.includes('\u4F9B\u8D27\u65B9') || val.includes('\u9500\u552E\u65B9')) && !headerCell) {
+        for (let cc = c; cc <= Math.min(c + 3, maxCol); cc++) {
+          const ct = trim(String(row.getCell(cc).text || row.getCell(cc).value || ''));
+          if (ct && !ct.includes('\u62AC\u5934') && !ct.includes('\u59D4\u6258') && !ct.includes('\u4F9B\u8D27') && !ct.includes('\u9500\u552E')) {
+            headerCell = { row: r, col: cc };
+            break;
+          }
+        }
+        if (!headerCell && c < maxCol) headerCell = { row: r, col: c + 1 };
+      if (numberCell && headerCell && headerCell.row === numberCell.row && Math.abs(headerCell.col - numberCell.col) <= 1) headerCell = null;
+      }
+      if ((val.includes('\u843D\u6B3E') || val.includes('\u53D7\u6258\u65B9') || val.includes('\u91C7\u8D2D\u65B9') || val.includes('\u63D0\u8D27\u5355\u4F4D') || val.includes('\u8D2D\u4E70\u65B9')) && !footerCell) {
+        for (let cc = c; cc <= Math.min(c + 3, maxCol); cc++) {
+          const ct = trim(String(row.getCell(cc).text || row.getCell(cc).value || ''));
+          if (ct && !ct.includes('\u843D\u6B3E') && !ct.includes('\u53D7\u6258') && !ct.includes('\u91C7\u8D2D')  && !ct.includes('\u63D0\u8D27\u5355\u4F4D') && !ct.includes('\u8D2D\u4E70')) {
+            footerCell = { row: r, col: cc };
+            break;
+          }
+        }
+        if (!footerCell && c < maxCol) footerCell = { row: r, col: c + 1 };
+      if (numberCell && footerCell && footerCell.row === numberCell.row && Math.abs(footerCell.col - numberCell.col) <= 1) footerCell = null;
+      }
+      if (val === '\u5408\u8BA1' || val === '\u5408 \u8BA1') summaryRow = r;
+    }
+    if (headerRow > 0 && r > headerRow && summaryRow === -1 && hasContent) {
+      if (dataStartRow === -1) dataStartRow = r;
+      dataEndRow = r;
+    }
+  }
+  if (summaryRow > 0 && dataEndRow >= summaryRow) dataEndRow = summaryRow - 1;
+    console.log('[Template] numberCell:', JSON.stringify(numberCell), 'headerCell:', JSON.stringify(headerCell), 'footerCell:', JSON.stringify(footerCell), 'summaryRow:', summaryRow, 'dataStartRow:', dataStartRow, 'dataEndRow:', dataEndRow);
+  return { headerRow, dataStartRow, dataEndRow, summaryRow, numberCell, headerCell, footerCell, colMap };
+}
+function copyRowStyle(srcRow, dstRow, colCount) {
+  if (!srcRow || !dstRow) return;
+  dstRow.height = srcRow.height;
+  for (let c = 1; c <= colCount; c++) {
+    const srcCell = srcRow.getCell(c);
+    const dstCell = dstRow.getCell(c);
+    try { dstCell.style = JSON.parse(JSON.stringify(srcCell.style)); } catch (e) {}
+    if (srcCell.numFmt) dstCell.numFmt = srcCell.numFmt;
+  }
+}
+async function createContractWorkbook(templateBuffer, contractNo, sellerName, buyerName, numberSuffix) {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(templateBuffer);
+  const ws = getFirstWorksheet(wb);
+  if (!ws) throw new Error('\u6A21\u677F\u4E2D\u672A\u627E\u5230\u6709\u6548\u5DE5\u4F5C\u8868');
+  const analysis = analyzeTemplate(ws);
+  if (analysis.headerCell) {
+    const cell = ws.getRow(analysis.headerCell.row).getCell(analysis.headerCell.col);
+    cell.value = String(sellerName || '');
+  }
+  const today0 = getTodayParts();
+  if (analysis.numberCell) {
+    const cell = ws.getRow(analysis.numberCell.row).getCell(analysis.numberCell.col);
+    const prefix = (cell.value && typeof cell.value === 'string' && /^\u7F16\u53F7[\uFF1A:]/.test(cell.value))
+      ? '\u7F16\u53F7\uFF1A' : '';
+    cell.value = prefix + today0.YYYYMMDD + '-X';
+  }
+  // ======== 根据固定文字"请贵司核准来人身份后速予办理相关提货手续为盼"定位采购方与日期 ========
+  var fixedNoticeRow = -1;
+  var noticeText = '\u8BF7\u8D35\u53F8\u6838\u51C6\u6765\u4EBA\u8EAB\u4EFD\u540E\u901F\u4E88\u529E\u7406\u76F8\u5173\u63D0\u8D27\u624B\u7EED\u4E3A\u76FC';
+  for (var sr = 1; sr <= ws.rowCount; sr++) {
+    for (var sc = 1; sc <= ws.columnCount; sc++) {
+      var sv = ws.getRow(sr).getCell(sc).value;
+      if (typeof sv === 'string' && sv.indexOf(noticeText) >= 0) {
+        fixedNoticeRow = sr;
+        break;
+      }
+    }
+    if (fixedNoticeRow > 0) break;
+  }
+    // Clear legacy date cells from template
+  for (var dr = 1; dr <= ws.rowCount; dr++) {
+    if (dr === analysis.headerRow) continue;
+    for (var dc = 1; dc <= ws.columnCount; dc++) {
+      var dv = ws.getRow(dr).getCell(dc).value;
+      if ((typeof dv === 'string' && dv.indexOf('\u65E5\u671F') >= 0) || dv instanceof Date) {
+          console.log('[clearDate] row=' + dr + ' col=' + dc + ' val=' + dv);
+        var isNumCell = analysis.numberCell && dr === analysis.numberCell.row && dc === analysis.numberCell.col;
+        var isFtrCell = analysis.footerCell && dr === analysis.footerCell.row && dc === analysis.footerCell.col;
+        if (!isNumCell && !isFtrCell) {
+          ws.getRow(dr).getCell(dc).value = null;
+        }
+      }
+    }
+  }
+ if (fixedNoticeRow > 0) {
+   // Set notice text alignment to left FIRST (before any row modifications)
+   for (var sc = 1; sc <= ws.columnCount; sc++) {
+     var sv = ws.getRow(fixedNoticeRow).getCell(sc).value;
+     if (typeof sv === 'string' && sv.indexOf(noticeText) >= 0) {
+        try { var fc = ws.getRow(fixedNoticeRow).getCell(sc); fc.alignment = { horizontal: 'left', vertical: 'middle' }; fc.font = { size: 16, bold: true }; } catch (e) {}
+       break;
+     }
+   }
+   var rightCol = 15; // O列
+   var buyerRow = ws.getRow(fixedNoticeRow + 1);
+   buyerRow.getCell(14).value = String(buyerName || '');
+    try { buyerRow.getCell(14).alignment = { horizontal: 'right', vertical: 'middle' }; buyerRow.getCell(14).font = { size: 16, bold: true }; } catch (e) {}
+   var dateRow = ws.getRow(fixedNoticeRow + 2);
+   var dNow = new Date();
+   dateRow.getCell(15).value = '\u65E5\u671F\uFF1A' + dNow.getFullYear() + '/' + (dNow.getMonth() + 1) + '/' + dNow.getDate();
+    try { dateRow.getCell(15).alignment = { horizontal: 'right', vertical: 'center' }; dateRow.getCell(15).font = { size: 16, bold: true }; } catch (e) {}
+ }
+  if (analysis.dataStartRow > 0 && analysis.dataEndRow >= analysis.dataStartRow) {
+    // Save template row styles BEFORE removal
+    const savedDataRow = ws.getRow(analysis.dataStartRow);
+    var savedStyles = [];
+    for (var c2 = 1; c2 <= savedDataRow.cellCount; c2++) {
+      try { savedStyles.push(JSON.parse(JSON.stringify(savedDataRow.getCell(c2).style || {}))); } catch (e) { savedStyles.push({}); }
+    }
+    var savedRowHeight = savedDataRow.height;
+    // Remove existing sample data rows
+    var rowsToRemove = analysis.dataEndRow - analysis.dataStartRow + 1;
+    // 搜索"请贵司核准..."行，调整删除范围避免误删
+    var noticeSaveRow = -1;
+    var noticeFindText = '\u8BF7\u8D35\u53F8\u6838\u51C6\u6765\u4EBA\u8EAB\u4EFD\u540E\u901F\u4E88\u529E\u7406\u76F8\u5173\u63D0\u8D27\u624B\u7EED\u4E3A\u76FC';
+    for (var sx = 1; sx <= ws.rowCount; sx++) {
+      for (var sy = 1; sy <= ws.columnCount; sy++) {
+        var sval = ws.getRow(sx).getCell(sy).value;
+        if (typeof sval === 'string' && sval.indexOf(noticeFindText) >= 0) { noticeSaveRow = sx; break; }
+      }
+      if (noticeSaveRow > 0) break;
+    }
+    if (noticeSaveRow > 0 && noticeSaveRow > analysis.dataStartRow) {
+      rowsToRemove = noticeSaveRow - analysis.dataStartRow;
+    }
+    ws.spliceRows(analysis.dataStartRow, rowsToRemove);
+  } else {
+    var savedStyles = null;
+    var savedRowHeight = null;
+  }
+  // 自动列宽：遍历所有列，根据内容调整
+  for (var ftc = 1; ftc <= ws.columnCount; ftc++) {
+    var maxLenCol = 0;
+    for (var ftr = 1; ftr <= ws.rowCount; ftr++) {
+      var ftv = ws.getRow(ftr).getCell(ftc).value;
+      if (ftv != null) {
+        var ftt = String(ftv);
+        var ftcl = 0;
+        for (var fti = 0; fti < ftt.length; fti++) {
+          ftcl += (ftt.charCodeAt(fti) > 127) ? 2 : 1;
+        }
+        if (ftcl > maxLenCol) maxLenCol = ftcl;
+      }
+    }
+    if (maxLenCol > 0) {
+      ws.getColumn(ftc).width = Math.min(Math.ceil(maxLenCol * 2.0) + 4, 55);
+    }
+  }
+  return { wb, ws, analysis, savedStyles, savedRowHeight };
+}
+function insertDataRow(ws, insertRowIdx, templateRowNum, data, colMap, savedStyles, savedRowHeight) {
+var safeVal = function(v) { return v === null || v === undefined ? '' : v; };
+  ws.spliceRows(insertRowIdx, 0, []);
+  const newRow = ws.getRow(insertRowIdx);
+  if (savedStyles && savedStyles.length > 0) {
+    newRow.height = savedRowHeight;
+    for (var ci = 0; ci < savedStyles.length; ci++) {
+      if (ci + 1 <= (newRow.cellCount || ws.columnCount || savedStyles.length)) { try { newRow.getCell(ci + 1).style = JSON.parse(JSON.stringify(savedStyles[ci])); } catch (e) {} }
+    }
+  } else if (templateRowNum && templateRowNum > 0) {
+    const templateRow = ws.getRow(templateRowNum);
+    copyRowStyle(templateRow, newRow, templateRow.cellCount || 30);
+  }
+  const colKeys = [
+    { name: '\u8BA2\u5355\u53F7', key: 'orderNo' },
+    { name: '\u8F66\u724C\u53F7', key: 'plateNo' },
+    { name: '\u53F8\u673A\u59D3\u540D', key: 'driverName' },
+    { name: '\u8EAB\u4EFD\u8BC1\u53F7', key: 'idCard' },
+    { name: '\u8054\u7CFB\u7535\u8BDD', key: 'phone' },
+    { name: '\u63D0\u8D27\u6570\u91CF\uFF08\u5428\uFF09', key: 'tons' },
+    { name: '\u4ED3\u5E93\u540D\u79F0', key: 'warehouse' },
+    { name: '\u89C4\u683C', key: 'spec' },
+    { name: '\u6279\u53F7', key: 'batchNo' },
+    { name: '\u5408\u540C\u53F7', key: 'contractNo' },
+    { name: '\u63D0\u8D27\u65E5\u671F', key: 'deliveryDate' },
+    { name: '\u5907\u6CE8', key: 'remark' },
+  ];
+  for (const entry of colKeys) {
+    var colIdx = colMap[entry.name];
+    if (!colIdx && (entry.key === 'deliveryDate' || entry.key === 'remark')) {
+      for (var hk in colMap) {
+        if (hk.toLowerCase().indexOf(entry.name.toLowerCase()) >= 0) {
+          colIdx = colMap[hk];
+          break;
+        }
+      }
+    }
+    if (colIdx && data[entry.key] !== undefined && data[entry.key] !== null) {
+      newRow.getCell(colIdx).value = safeVal(data[entry.key]);
+    }
+  }
+  return newRow;
+}
+function addSummaryRow(ws, insertRowIdx, dataStartIdx, dataEndIdx, templateRowNum, colMap, savedStyles, savedRowHeight) {
+  ws.spliceRows(insertRowIdx, 0, []);
+  const summaryRow = ws.getRow(insertRowIdx);
+  if (savedStyles && savedStyles.length > 0) {
+    summaryRow.height = savedRowHeight;
+    for (var cj = 0; cj < savedStyles.length; cj++) {
+      if (cj + 1 <= (summaryRow.cellCount || savedStyles.length)) { try { summaryRow.getCell(cj + 1).style = JSON.parse(JSON.stringify(savedStyles[cj])); } catch (e) {} }
+    }
+  } else if (templateRowNum && templateRowNum > 0) {
+    const templateRow = ws.getRow(templateRowNum);
+    copyRowStyle(templateRow, summaryRow, templateRow.cellCount || 30);
+  }
+  const phoneColIdx = colMap['\u8054\u7CFB\u7535\u8BDD'] || colMap['\u5408\u8BA1'] || Object.keys(colMap).reduce(function(a,k){var v=colMap[k];return v>a?v:a;},0) || 6;
+  if (phoneColIdx) summaryRow.getCell(phoneColIdx).value = '\u5408\u8BA1';
+  const tonsColIdx = colMap['\u63D0\u8D27\u6570\u91CF\uFF08\u5428\uFF09'] || 7;
+  const sf = excelColLetter(tonsColIdx);
+  if (tonsColIdx) summaryRow.getCell(tonsColIdx).value = { formula: 'SUM(' + sf + dataStartIdx + ':' + sf + dataEndIdx + ')' };
+  if (tonsColIdx) summaryRow.getCell(tonsColIdx).numFmt = '#,##0.000';
+}
+function excelColLetter(col) {
+  if (col <= 26) return String.fromCharCode(64 + col);
+  let s = '';
+  while (col > 0) {
+    col--;
+    s = String.fromCharCode(65 + (col % 26)) + s;
+    col = Math.floor(col / 26);
+  }
+  return s;
+}
+// ======== 8. 司锟斤拷锟斤拷息锟斤拷锟斤拷 ========
+function parseDriverInfo(rawText) {
+  if (!rawText) return [];
+  const text = trim(String(rawText));
+  if (!text) return [];
+  const segments = text.split(';').map(s => trim(s)).filter(s => s !== '');
+  if (segments.length === 0) return [];
+  const results = [];
+  for (let i = 0; i < segments.length; i += 2) {
+    const driverEntry = segments[i];
+    let remark = '\u65E0';
+    if (i + 1 < segments.length && /^\u5907\u6CE8[:\uFF1A]/i.test(segments[i + 1])) {
+      remark = segments[i + 1].replace(/^\u5907\u6CE8[:\uFF1A]/i, '').trim();
+      if (!remark) remark = '\u65E0';
+    }
+    const parts = driverEntry.split('-').map(s => trim(s));
+    if (parts.length < 6) continue;
+    const tons = parts.pop();
+    const batchNo = parts.slice(4).join('-');
+    results.push({
+      driverName: parts[0] || '',
+      idCard: parts[1] || '',
+      phone: parts[2] || '',
+      plateNo: parts[3] || '',
+      batchNo,
+      tons: tons || '0',
+      remark,
+    });
+  }
+  return results;
+}
+function validateIdCard(idCard) {
+  if (!idCard) return true;
+  const clean = trim(String(idCard));
+  if (clean.length === 15) return true;
+  if (clean.length === 18) return /^\d{17}[\dXx]$/.test(clean);
+  return false;
+}
+// ======== 9. 锟斤拷锟侥达拷锟斤拷锟竭硷拷 ========
+async function processAll() {
+  if (!STATE.files.order) { showModal('\u8BF7\u4E0A\u4F20\u8D27\u8F6C\u9500\u552E\u8BA2\u5355.xlsx'); return; }
+  if (!STATE.files.yarn) { showModal('\u8BF7\u4E0A\u4F20\u7EB1\u7EBF\u9500\u552E\u8BA2\u5355\u5217\u8868.xlsx'); return; }
+  if (!STATE.files.template) { showModal('\u8BF7\u4E0A\u4F20\u8F93\u51FA\u6A21\u677F.xlsx'); return; }
+  if (!STATE.partiesSaved || STATE.parties.length === 0) { showModal('\u8BF7\u5148\u786E\u8BA4/\u4FDD\u5B58\u91C7\u9500\u65B9\u540D\u5355'); return; }
+  STATE.isProcessing = true;
+  STATE.results.success = [];
+  STATE.results.failed = [];
+  STATE.results.semiFinished = [];
+  updateUIState();
+  DOM.progressArea.style.display = 'block';
+  DOM.progressBar.style.width = '0%';
+  DOM.progressPct.textContent = '0%';
+  DOM.progressText.textContent = '\u6B63\u5728\u8BFB\u53D6\u6570\u636E\u2026';
+  try {
+    // 9.1 锟斤拷取锟斤拷转锟斤拷锟桔讹拷??
+    const orderWb = new ExcelJS.Workbook();
+    await orderWb.xlsx.load(STATE.files.order.buffer);
+    const orderWs = getFirstWorksheet(orderWb);
+    const orderRows = [];
+    const maxColOrder = orderWs.columnCount || 30;
+    for (let r = 1; r <= orderWs.rowCount; r++) {
+      const row = orderWs.getRow(r);
+      const cells = [];
+      for (let c = 1; c <= maxColOrder; c++) cells.push(row.getCell(c).text || row.getCell(c).value || '');
+      orderRows.push(cells);
+    }
+    if (orderRows.length < 2) { showModal('\u8D27\u8F6C\u9500\u552E\u8BA2\u5355\u6587\u4EF6\u65E0\u6709\u6548\u6570\u636E\u884C'); STATE.isProcessing = false; updateUIState(); return; }
+    const headerCells = orderRows[0].map(h => trim(String(h)));
+    const findCol = (names) => {
+      // 1. 锟斤拷确匹锟斤拷
+      for (const n of names) {
+        const i = headerCells.indexOf(n);
+        if (i >= 0) return i;
+      }
+      // 2. 锟斤拷锟斤拷匹锟戒（锟斤拷锟斤拷锟街达拷小写锟斤拷
+      for (const n of names) {
+        const lowerN = n.toLowerCase();
+        for (let i = 0; i < headerCells.length; i++) {
+          if (headerCells[i] && headerCells[i].toLowerCase().includes(lowerN)) {
+            return i;
+          }
+        }
+      }
+      return -1;
+    };
+    const COL = {
+      seller: findCol(['\u9500\u552E\u65B9']), buyer: findCol(['\u91C7\u8D2D\u65B9']),
+      contract: findCol(['\u8D27\u8F6C\u9500\u552E\u5408\u540C\u53F7']), salesOrder: findCol(['\u9500\u552E\u5355\u53F7', '\u6D89\u53CA\u9500\u552E\u5355\u53F7']),
+      productName: findCol(['\u5546\u54C1\u540D\u79F0']), batchNo: findCol(['\u6279\u53F7', '\u6279\u6B21\u53F7']),
+      deliveryDate: findCol(['\u63D0\u8D27\u65E5\u671F']), warehouse: findCol(['\u4ED3\u5E93', '\u4ED3\u5E93\u540D\u79F0']), tons: findCol(['\u6570\u91CF\uFF08\u5428\uFF09', '\u6570\u91CF(\u5428)']),
+    };
+    const validOrders = [];
+    for (let i = 1; i < orderRows.length; i++) {
+      const row = orderRows[i];
+      const rowNum = i + 1;
+      const seller = trim(String(row[COL.seller] || ''));
+     const contractNo = trim(String(row[COL.contract] || ''));
+     const buyer = trim(String(row[COL.buyer] || ''));
+     if (!contractNo) continue;
+     if (!STATE.parties.includes(buyer)) continue;
+     validOrders.push({
+       rowIndex: i, rowNum, seller, buyer, contractNo,
+        salesOrderRaw: row[COL.salesOrder] || '',
+        productName: trim(String(row[COL.productName] || '')),
+        batchNo: trim(String(row[COL.batchNo] || '')),
+        deliveryDate: trim(String(row[COL.deliveryDate] || '')),
+        warehouse: trim(String(row[COL.warehouse] || '')),
+        tonsRaw: row[COL.tons],
+      });
+    }
+    if (validOrders.length === 0) { showModal('\u5F53\u524D\u91C7\u9500\u65B9\u540D\u5355\u4E0B\u65E0\u6709\u6548\u9500\u552E\u8BA2\u5355\u6570\u636E\uFF0C\u8BF7\u6838\u5BF9\u540D\u5355\u6216\u8BA2\u5355\u6587\u4EF6\u5185\u5BB9'); STATE.isProcessing = false; updateUIState(); return; }
+    const contractSet = new Set();
+    validOrders.forEach(o => contractSet.add(o.contractNo));
+    const contractNos = Array.from(contractSet);
+    STATE.processingOrder = contractNos;
+    DOM.progressText.textContent = '\u5171\u53D1\u73B0 ' + contractNos.length + ' \u4E2A\u5408\u540C\uFF0C\u5F00\u59CB\u5904\u7406\u2026';
+    // 9.3 锟斤拷取纱锟斤拷锟斤拷锟桔讹拷锟斤拷锟斤拷??
+    const yarnWb = new ExcelJS.Workbook();
+    await yarnWb.xlsx.load(STATE.files.yarn.buffer);
+    const yarnWs = getFirstWorksheet(yarnWb);
+    const yarnData = [];
+    const maxColYarn = yarnWs.columnCount || 30;
+    for (let r = 2; r <= yarnWs.rowCount; r++) {
+      const row = yarnWs.getRow(r);
+      const cells = [];
+      for (let c = 1; c <= maxColYarn; c++) cells.push(row.getCell(c).text || row.getCell(c).value || '');
+      yarnData.push(cells);
+    }
+    const yr1 = yarnWs.getRow(1);
+    const yarnHeaderCells = [];
+    for (let c = 1; c <= maxColYarn; c++) yarnHeaderCells.push(trim(String(yr1.getCell(c).text || yr1.getCell(c).value || '')));
+    const findYarnCol = (names) => {
+      for (const n of names) {
+        const i = yarnHeaderCells.indexOf(n);
+        if (i >= 0) return i;
+      }
+      for (const n of names) {
+        const lowerN = n.toLowerCase();
+        for (let i = 0; i < yarnHeaderCells.length; i++) {
+          if (yarnHeaderCells[i] && yarnHeaderCells[i].toLowerCase().includes(lowerN)) {
+            return i;
+          }
+        }
+      }
+      return -1;
+    };
+    const YC = {
+      deliveryNo: findYarnCol(['\u63D0\u8D27\u5355\u53F7']), driverInfo: findYarnCol(['\u81EA\u63D0\u53F8\u673A\u4FE1\u606F']),
+      productName: findYarnCol(['\u5546\u54C1\u540D\u79F0']), batchNo: findYarnCol(['\u6279\u6B21\u53F7', '\u6279\u53F7']),
+      warehouse: findYarnCol(['\u4ED3\u5E93', '\u4ED3\u5E93\u540D\u79F0']),
+    };
+    const yarnIndex = {};
+    for (const yr of yarnData) {
+      const deliveryNo = trim(String(yr[YC.deliveryNo] || ''));
+      if (!deliveryNo) continue;
+      if (!yarnIndex[deliveryNo]) yarnIndex[deliveryNo] = [];
+      yarnIndex[deliveryNo].push({
+        driverInfoRaw: yr[YC.driverInfo] || '',
+        productName: trim(String(yr[YC.productName] || '')),
+        batchNo: trim(String(yr[YC.batchNo] || '')),
+        warehouse: trim(String(yr[YC.warehouse] || '')),
+      });
+    }
+    const templateBuffer = STATE.files.template.buffer;
+    const today = getTodayParts();
+    let successCount = 0, failCount = 0;
+    // 9.4 遍历合同并处理
+    for (let ci = 0; ci < contractNos.length; ci++) {
+      const contractNo = contractNos[ci];
+      const pct = ((ci + 1) / contractNos.length * 100).toFixed(1);
+      DOM.progressBar.style.width = pct + '%';
+      DOM.progressPct.textContent = pct + '%';
+      DOM.progressText.textContent = '\u6B63\u5728\u5904\u7406\u7B2C ' + (ci + 1) + ' \u4E2A\u5408\u540C\uFF0C\u5171 ' + contractNos.length + ' \u4E2A\uFF08\u5408\u540C\u53F7\uFF1A' + contractNo + '\uFF09';
+      await new Promise(r => setTimeout(r, 0));
+      try {
+        await processSingleContract(contractNo, ci + 1, validOrders, yarnIndex, templateBuffer, COL, YC, today);
+        successCount++;
+      } catch (err) {
+        failCount++;
+        STATE.results.failed.push({ contractNo, error: err.message || String(err) });
+        console.error('[processSingleContract] Error for', contractNo, ':', err.stack || err.message || err);
+      }
+      DOM.successCount.textContent = successCount;
+      DOM.failedCount.textContent = failCount;
+    }
+    DOM.progressBar.style.width = '100%';
+    DOM.progressPct.textContent = '100%';
+    DOM.progressText.textContent = '\u5904\u7406\u5B8C\u6210\uFF01\u6210\u529F ' + successCount + ' \u4E2A\uFF0C\u5931\u8D25 ' + failCount + ' \u4E2A';
+    renderResults();
+  } catch (err) {
+    showModal('\u5904\u7406\u8FC7\u7A0B\u4E2D\u53D1\u751F\u9519\u8BEF\uFF1A' + err.message);
+  } finally {
+    STATE.isProcessing = false;
+    updateUIState();
+  }
+}
+async function processSingleContract(contractNo, orderIndex, validOrders, yarnIndex, templateBuffer, COL, YC, today) {
+  const contractOrders = validOrders.filter(o => o.contractNo === contractNo);
+  const buyerSet = new Set(contractOrders.map(o => o.buyer));
+  if (buyerSet.size > 1) {
+    const buyers = Array.from(buyerSet);
+    throw new Error('\u5408\u540C\u53F7\u3010' + contractNo + '\u3011\u4E0B\u5B58\u5728\u591A\u4E2A\u4E0D\u540C\u7684\u91C7\u8D2D\u65B9\uFF08' + buyers.join('\u3001') + '\uFF09\uFF0C\u65E0\u6CD5\u786E\u5B9A\u552F\u4E00\u843D\u6B3E\u65B9\uFF0C\u8BF7\u6838\u5BF9\u8BA2\u5355\u6570\u636E');
+  }
+  const sellerName = contractOrders[0].seller;
+  const buyerName = contractOrders[0].buyer;
+  const { wb, ws, analysis, savedStyles, savedRowHeight } = await createContractWorkbook(templateBuffer, contractNo, sellerName, buyerName, orderIndex);
+  let currentRow = analysis.dataStartRow > 0 ? analysis.dataStartRow : (analysis.headerRow > 0 ? analysis.headerRow + 1 : 3);
+  let seqNumber = 1;
+  const colMap = analysis.colMap;
+  if (Object.keys(colMap).length === 0) {
+    const tnames = ['\u5E8F\u53F7','\u8BA2\u5355\u53F7','\u8F66\u724C\u53F7','\u53F8\u673A\u59D3\u540D','\u8EAB\u4EFD\u8BC1\u53F7','\u8054\u7CFB\u7535\u8BDD','\u63D0\u8D27\u6570\u91CF\uFF08\u5428\uFF09','\u4ED3\u5E93\u540D\u79F0','\u89C4\u683C','\u6279\u53F7','\u5408\u540C\u53F7','\u63D0\u8D27\u65E5\u671F','\u5907\u6CE8'];
+    for (let c = 0; c < tnames.length; c++) colMap[tnames[c]] = c + 1;
+  }
+  let allDriverRows = [];
+  const validationErrors = [];
+  for (let oi = 0; oi < contractOrders.length; oi++) {
+    const order = contractOrders[oi];
+    const salesOrderNos = splitSalesOrderNumbers(order.salesOrderRaw);
+    let orderTotalDriverTons = 0;
+    for (const salesOrderNo of salesOrderNos) {
+      if (!salesOrderNo) continue;
+      const yarnMatches = yarnIndex[salesOrderNo];
+      if (!yarnMatches || yarnMatches.length === 0) {
+        throw new Error('\u9500\u552E\u5355\u53F7\u3010' + salesOrderNo + '\u3011\u672A\u5728\u7EB1\u7EBF\u9500\u552E\u8BA2\u5355\u5217\u8868\u4E2D\u627E\u5230\u5BF9\u5E94\u63D0\u8D27\u5355\u53F7\u6570\u636E\uFF0C\u8BF7\u6838\u5BF9');
+      }
+      for (let mi = 0; mi < yarnMatches.length; mi++) {
+        const match = yarnMatches[mi];
+        const fieldErrors = [];
+        const driverNameFromMatch = (match.driverInfoRaw || '').split('-')[0] || '\u672A\u77E5';
+        if (!fuzzyEquals(order.productName, match.productName)) {
+          fieldErrors.push({ driver: driverNameFromMatch, field: '\u5546\u54C1\u540D\u79F0', orderValue: order.productName, yarnValue: match.productName });
+        }
+        if (!fuzzyEquals(order.batchNo, match.batchNo)) {
+          fieldErrors.push({ driver: driverNameFromMatch, field: '\u6279\u53F7', orderValue: order.batchNo, yarnValue: match.batchNo });
+        }
+        if (!fuzzyEquals(order.warehouse, match.warehouse)) {
+          fieldErrors.push({ driver: driverNameFromMatch, field: '\u4ED3\u5E93', orderValue: order.warehouse, yarnValue: match.warehouse });
+        }
+        if (fieldErrors.length > 0) {
+          let errMsg = '\u9500\u552E\u5355\u53F7\u3010' + salesOrderNo + '\u3011\uFF0C\u5B58\u5728\u4EE5\u4E0B\u6821\u9A8C\u5931\u8D25\u9879\uFF1A\n';
+          for (const fe of fieldErrors) errMsg += '- \u53F8\u673A\u3010' + fe.driver + '\u3011\uFF0C' + fe.field + '\u4E0D\u5339\u914D\uFF1B\u8BA2\u5355\u503C\uFF1A' + fe.orderValue + '\uFF0C\u7EB1\u7EBF\u660E\u7EC6\u503C\uFF1A' + fe.yarnValue + '\n';
+          validationErrors.push(errMsg);
+          continue;
+        }
+        const drivers = parseDriverInfo(match.driverInfoRaw);
+        if (drivers.length === 0) {
+          throw new Error('\u9500\u552E\u5355\u53F7\u3010' + salesOrderNo + '\u3011\uFF0C\u7EB1\u7EBF\u660E\u7EC6\u4E2D\u7684\u81EA\u63D0\u53F8\u673A\u4FE1\u606F\u683C\u5F0F\u5F02\u5E38\uFF0C\u65E0\u6CD5\u89E3\u6790');
+        }
+        for (let di = 0; di < drivers.length; di++) {
+          const driver = drivers[di];
+          if (driver.idCard && !validateIdCard(driver.idCard)) {
+            validationErrors.push('\u9500\u552E\u5355\u53F7\u3010' + salesOrderNo + '\u3011\uFF0C\u53F8\u673A\u3010' + driver.driverName + '\u3011\uFF0C\u8EAB\u4EFD\u8BC1\u53F7\u3010' + driver.idCard + '\u3011\u683C\u5F0F\u975E\u5E38\u89C4\uFF0C\u5DF2\u539F\u6837\u586B\u5165');
+          }
+          const tonsVal = cleanNumeric(driver.tons);
+          const rowData = {
+            orderNo: salesOrderNo, plateNo: driver.plateNo, driverName: driver.driverName,
+            idCard: driver.idCard, phone: driver.phone, tons: isNaN(tonsVal) ? 0 : tonsVal,
+           warehouse: order.warehouse, spec: order.productName, batchNo: driver.batchNo || order.batchNo,
+            contractNo: contractNo, deliveryDate: today.YYYYMMDD.slice(0, 4) + '-' + today.YYYYMMDD.slice(4, 6) + '-' + today.YYYYMMDD.slice(6, 8), remark: driver.remark,
+          };
+          insertDataRow(ws, currentRow, null, rowData, colMap, savedStyles, savedRowHeight);
+          const seqCol = colMap['\u5E8F\u53F7'] || 1;
+          ws.getRow(currentRow).getCell(seqCol).value = seqNumber++;
+          if (savedStyles && savedStyles[seqCol - 1]) {
+            try { ws.getRow(currentRow).getCell(seqCol).style = JSON.parse(JSON.stringify(savedStyles[seqCol - 1])); } catch (e) {}
+          }
+          allDriverRows.push({ rowIdx: currentRow, tons: isNaN(tonsVal) ? 0 : tonsVal, salesOrderNo });
+          currentRow++;
+        }
+      }
+      const driverTons = allDriverRows.filter(d => d.salesOrderNo === salesOrderNo).reduce((sum, d) => sum + d.tons, 0);
+      orderTotalDriverTons += driverTons;
+    }
+    // 对该订单行所有销售单号的司机吨数汇总后与订单吨数比较
+    const orderTons = cleanNumeric(order.tonsRaw);
+    if (isNaN(orderTons)) {
+      validationErrors.push('\u8BA2\u5355\u884C\uFF08\u6D89\u53CA\u9500\u552E\u5355\u53F7\uFF1A' + order.salesOrderRaw + '\u3011\uFF0C\u6570\u91CF\u683C\u5F0F\u5F02\u5E38\uFF0C\u5DF2\u8DF3\u8FC7\u8BE5\u8BA2\u5355\u884C');
+      continue;
+    }
+    if (Math.abs(orderTotalDriverTons - orderTons) > 0.00001) {
+      throw new Error('\u8BA2\u5355\u884C\uFF08\u6D89\u53CA\u9500\u552E\u5355\u53F7\uFF1A' + order.salesOrderRaw + '\uFF09\u660E\u7EC6\u63D0\u8D27\u5428\u6570\u5408\u8BA1\u3010' + orderTotalDriverTons.toFixed(3) + '\u3011\u5428\uFF0C\u8BA2\u5355\u5E94\u6536\u5428\u6570\u3010' + orderTons.toFixed(3) + '\u3011\u5428\uFF0C\u5BF9\u8D26\u4E0D\u7B26\uFF0C\u8BF7\u6838\u5BF9');
+    }
+  }
+  const criticalErrors = validationErrors.filter(e => typeof e === 'string' && !e.includes('\u683C\u5F0F\u975E\u5E38\u89C4') && !e.includes('\u6570\u91CF\u683C\u5F0F\u5F02\u5E38'));
+  if (criticalErrors.length > 0) throw new Error(criticalErrors.join('\n'));
+  // 核实已尝试的销售单号
+  const attemptedSalesOrders = new Set();
+  for (const order of contractOrders) {
+    const salesOrderNos = splitSalesOrderNumbers(order.salesOrderRaw);
+    for (const sno of salesOrderNos) {
+      if (sno) attemptedSalesOrders.add(sno);
+    }
+  }
+ if (allDriverRows.length > 0) {
+   const summaryInsertRow = currentRow;
+    const dataFirstRow = allDriverRows[0].rowIdx;
+    const dataLastRow = allDriverRows[allDriverRows.length - 1].rowIdx;
+    addSummaryRow(ws, summaryInsertRow, dataFirstRow, dataLastRow, null, colMap, savedStyles, savedRowHeight);
+    // 添加表格框线：从表头到合计行，D列(4)到O列(15)，内外全框线
+    if (analysis.headerRow > 0) {
+      for (var br = analysis.headerRow; br <= summaryInsertRow; br++) {
+        for (var bc = 4; bc <= 15; bc++) {
+          try {
+            var bCell = ws.getRow(br).getCell(bc);
+            bCell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+            bCell.alignment = { horizontal: 'center', vertical: 'middle' };             if (bCell.font) bCell.font.size = 16; else bCell.font = { size: 16 };
+          } catch (e) {}
+        }
+      }
+    }
+    // Merge notice text: D(4)-G(7) after all insertions
+    var mergeNoticeRow = -1;
+    var mergeNoticeText = '\u8BF7\u8D35\u53F8\u6838\u51C6\u6765\u4EBA\u8EAB\u4EFD\u540E\u901F\u4E88\u529E\u7406\u76F8\u5173\u63D0\u8D27\u624B\u7EED\u4E3A\u76FC';
+    for (var mx = 1; mx <= ws.rowCount; mx++) {
+      for (var my = 1; my <= ws.columnCount; my++) {
+        var mv = ws.getRow(mx).getCell(my).value;
+        if (typeof mv === 'string' && mv.indexOf(mergeNoticeText) >= 0) { mergeNoticeRow = mx; break; }
+      }
+      if (mergeNoticeRow > 0) break;
+    }
+ if (mergeNoticeRow > 0) {
+      // Remove ALL existing merges on the notice row (so we can re-merge with left alignment)
+      if (ws.model && ws.model.merges) {
+        ws.model.merges = ws.model.merges.filter(function(m) {
+          return !(m.from && m.to && m.from.row <= mergeNoticeRow && m.to.row >= mergeNoticeRow);
+        });
+      }
+     // Find the cell with the notice text, clear and re-set with left alignment
+     for (var my = 1; my <= ws.columnCount; my++) {
+       var nc = ws.getRow(mergeNoticeRow).getCell(my);
+       var nv = nc.value;
+       if (typeof nv === 'string' && nv.indexOf(mergeNoticeText) >= 0) {
+         try {
+           nc.value = null;
+           nc.style = {};
+           nc.value = nv;
+            nc.alignment = { horizontal: 'left', vertical: 'middle' }; nc.font = { size: 16, bold: true };
+         } catch (e) {}
+         break;
+       }
+     }
+    try { ws.mergeCells(mergeNoticeRow, 4, mergeNoticeRow, 7); } catch (e) {}
+     try {         var noticeCellA = ws.getRow(mergeNoticeRow).getCell(4);         var s = JSON.parse(JSON.stringify(noticeCellA.style || {})); s.alignment = { horizontal: 'left', vertical: 'middle' }; s.font = { size: 16, bold: true }; noticeCellA.style = s;       } catch (e) {}
+     // Merge buyer N(14)-O(15), left-aligned
+     var buyerMergeRow = mergeNoticeRow + 1;
+     try { ws.mergeCells(buyerMergeRow, 14, buyerMergeRow, 15); } catch (e) {}
+    try {
+      var buyerMergeCell = ws.getRow(buyerMergeRow).getCell(14);
+        buyerMergeCell.alignment = { horizontal: 'right', vertical: 'middle' }; buyerMergeCell.font = { size: 16, bold: true };
+    } catch (e) {}
+  }
+   // Auto-fit column widths D(4)-O(15)
+   for (var ac = 4; ac <= 15; ac++) {
+     var maxLen = 0;
+     for (var ar = analysis.headerRow; ar <= summaryInsertRow; ar++) {
+       var cv = ws.getRow(ar).getCell(ac).value;
+       if (cv != null) {
+         var txt = String(cv);
+         var cl = 0;
+         for (var ai = 0; ai < txt.length; ai++) {
+           cl += (txt.charCodeAt(ai) > 127) ? 2 : 1;
+         }
+         if (cl > maxLen) maxLen = cl;
+       }
+     }
+     if (maxLen > 0) ws.getColumn(ac).width = Math.min(Math.ceil(maxLen * 2.0) + 4, 55);
+   }
+  const totalTons = allDriverRows.reduce((sum, d) => sum + d.tons, 0);
+   const sellerShortName = generateShortName(sellerName);
+   const buyerFirst4 = getFirst4Chars(buyerName);
+   const totalTonsStr = String(parseFloat(totalTons.toFixed(3)));
+    const fileName = today.MMDD + sellerShortName + '-' + buyerFirst4 + '提货委托书' + totalTonsStr + '吨.xlsx';
+  const outBuffer = await wb.xlsx.writeBuffer();
+   STATE.results.success.push({ contractNo, fileName, buffer: outBuffer, totalTons: totalTonsStr });
+  } else {
+    if (attemptedSalesOrders.size === 0) {
+      throw new Error(
+'\\u5408\\u540C\\u53F7\\u3010' + contractNo + '\\u3011\\u65E0\\u6709\\u6548\\u53F8\\u673A\\u660E\\u7EC6\\u6570\\u636E\\uFF0C\\u539F\\u56E0\\uFF1A\\u8BE5\\u5408\\u540C\\u5728\\u8D27\\u8F6C\\u9500\\u552E\\u8BA2\\u5355\\u4E2D\\u7684\\u201C\\u9500\\u552E\\u5355\\u53F7\\u201D\\u5217\\u4E3A\\u7A7A\\uFF0C\\u65E0\\u6CD5\\u5339\\u914D\\u7EB1\\u7EBF\\u660E\\u7EC6\\u6570\\u636E');
+    } else {
+      throw new Error(
+'\\u5408\\u540C\\u53F7\\u3010' + contractNo + '\\u3011\\u65E0\\u6709\\u6548\\u53F8\\u673A\\u660E\\u7EC6\\u6570\\u636E\\uFF0C\\u539F\\u56E0\\uFF1A\\u5DF2\\u5C1D\\u8BD5\\u9500\\u552E\\u5355\\u53F7\\uFF1A' + Array.from(attemptedSalesOrders).join('\\u3001') + '\\uFF0C\\u4F46\\u5728\\u7EB1\\u7EBF\\u9500\\u552E\\u8BA2\\u5355\\u5217\\u8868\\u4E2D\\u672A\\u627E\\u5230\\u5BF9\\u5E94\\u63D0\\u8D27\\u5355\\u53F7\\u6570\\u636E');
+    }
+  }
+}
+function renderResults() {
+  const { success, failed } = STATE.results;
+  if (success.length > 0) {
+    DOM.successList.innerHTML = success.map((item, idx) => {
+      return '<div class="result-item result-item-success"><div class="item-info"><div class="item-contract">' + esc(item.contractNo) + '</div><div class="item-detail">' + esc(item.fileName) + '  |  \u5408\u8BA1 ' + item.totalTons + ' \u5428</div></div><div class="item-actions"><button class="btn btn-download-single" data-idx="' + idx + '">\u2B07\uFE0F \u4E0B\u8F7D</button></div></div>';
+    }).join('');
+    DOM.successCount.textContent = success.length;
+    DOM.successList.querySelectorAll('.btn-download-single').forEach(btn => {
+      btn.addEventListener('click', function () { downloadSingle(parseInt(this.dataset.idx)); });
+    });
+    DOM.btnDownloadAll.disabled = false;
+  } else {
+    DOM.successList.innerHTML = '<p class="empty-hint">\u6682\u65E0\u5904\u7406\u7ED3\u679C</p>';
+    DOM.successCount.textContent = '0';
+    DOM.btnDownloadAll.disabled = true;
+  }
+  if (failed.length > 0) {
+    DOM.failedList.innerHTML = failed.map(item => '<div class="result-item result-item-fail"><div class="item-info"><div class="item-contract">' + esc(item.contractNo) + '</div><div class="item-error">' + esc(item.error) + '</div></div></div>').join('');
+    DOM.failedCount.textContent = failed.length;
+  } else {
+    DOM.failedList.innerHTML = '<p class="empty-hint">\u6682\u65E0\u5931\u8D25\u8BB0\u5F55</p>';
+    DOM.failedCount.textContent = '0';
+  }
+}
+function esc(text) { var d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+function downloadSingle(idx) {
+  var item = STATE.results.success[idx];
+  if (!item) return;
+  var blob = new Blob([item.buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  saveAs(blob, item.fileName);
+}
+async function downloadAllZip() {
+  var items = STATE.results.success;
+  if (items.length === 0) return;
+  var origText = DOM.btnDownloadAll.textContent;
+  DOM.btnDownloadAll.textContent = '\u23F3 \u6B63\u5728\u6253\u5305\u2026';
+  DOM.btnDownloadAll.disabled = true;
+  try {
+    var zip = new JSZip();
+    for (var i = 0; i < items.length; i++) {
+      try { zip.file(items[i].fileName, items[i].buffer); } catch (err) { throw new Error('\u6587\u4EF6\u300C' + items[i].fileName + '\u300D\u5199\u5165\u5F02\u5E38'); }
+    }
+    var zipBlob = await zip.generateAsync({ type: 'blob' });
+    saveAs(zipBlob, '\u63D0\u8D27\u59D4\u6258\u4E66_' + getTodayParts().MMDD + '.zip');
+  } catch (err) {
+    showModal('\u6253\u5305\u5931\u8D25\uFF1A' + err.message + '\uFF0C\u8BF7\u5C1D\u8BD5\u5206\u6279\u4E0B\u8F7D');
+  } finally {
+    DOM.btnDownloadAll.textContent = origText;
+    DOM.btnDownloadAll.disabled = false;
+  }
+}
+function updateUIState() {
+  DOM.btnProcess.disabled = STATE.isProcessing;
+  DOM.btnProcess.textContent = STATE.isProcessing ? '\u23F3 \u5904\u7406\u4E2D\u2026' : '\uD83D\uDE80 \u5F00\u59CB\u5904\u7406';
+}
+function setupTabs() {
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tab = this.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      document.querySelectorAll('.result-panel').forEach(function (p) { p.classList.remove('active'); });
+      DOM['panel' + tab.charAt(0).toUpperCase() + tab.slice(1)].classList.add('active');
+    });
+  });
+}
+function setupModal() {
+  DOM.modalClose.addEventListener('click', hideModal);
+  DOM.modalOverlay.addEventListener('click', function (e) { if (e.target === this) hideModal(); });
+}
+function init() {
+  checkForUpdate();
+  setupFileUploads();
+  setupPartiesConfig();
+  setupTemplateHistory();
+  setupTabs();
+  setupModal();
+  DOM.btnProcess.addEventListener('click', processAll);
+  DOM.btnDownloadAll.addEventListener('click', downloadAllZip);
+  updateUIState();
+}
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
+
+

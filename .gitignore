@@ -1,0 +1,4 @@
+﻿node_modules/
+*.7z
+package-lock.json
+package.json
